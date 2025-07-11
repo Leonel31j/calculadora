@@ -1,4 +1,5 @@
 name: Build Executable
+
 on:
   release:
     types: [published]
@@ -6,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
       - uses: actions/checkout@v4
       
@@ -18,16 +20,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller requests
-          
+      
       - name: Build EXE
         run: pyinstaller --onefile --windowed calculadora.py
-          
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+
+      - name: Install GitHub CLI
+        run: choco install gh -y
+
+      - name: Authenticate GH CLI
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./dist/calculadora.exe
-          asset_name: calculadora.exe
-          asset_content_type: application/octet-stream
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: gh auth setup-git
+
+      - name: Upload Release Asset using GH CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" ./dist/calculadora.exe#calculadora.exe --clobber
